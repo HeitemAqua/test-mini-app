@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Telegram Mini App - Кликер</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Manrope:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e27;
+            --bg-secondary: #151b3d;
+            --accent-primary: #00ff88;
+            --accent-glow: rgba(0, 255, 136, 0.3);
+            --text-primary: #e8f0ff;
+            --text-secondary: #8b9dc3;
+            --energy-color: #ff3366;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Manrope', sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 30%, var(--accent-glow) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(255, 51, 102, 0.2) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: slideDown 0.6s ease-out;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-primary), #00ccff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--bg-primary);
+        }
+
+        .title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 36px;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--accent-primary), #00ccff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+            animation: slideUp 0.6s ease-out 0.1s backwards;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-primary);
+            box-shadow: 0 10px 30px var(--accent-glow);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--accent-primary);
+            text-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .energy-value {
+            color: var(--energy-color);
+            text-shadow: 0 0 20px rgba(255, 51, 102, 0.5);
+        }
+
+        .game-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .click-button {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-primary), #00ccff);
+            border: none;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: pulse 2s ease-in-out infinite, slideUp 0.6s ease-out 0.2s backwards;
+            box-shadow: 
+                0 0 40px var(--accent-glow),
+                0 0 80px var(--accent-glow),
+                inset 0 0 30px rgba(255, 255, 255, 0.3);
+        }
+
+        .click-button::before {
+            content: '⚡';
+            font-size: 80px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: rotate 3s linear infinite;
+        }
+
+        .click-button:active {
+            transform: scale(0.9);
+            box-shadow: 
+                0 0 60px var(--accent-glow),
+                0 0 120px var(--accent-glow);
+        }
+
+        .click-animation {
+            position: absolute;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 24px;
+            color: var(--accent-primary);
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+            text-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .upgrades {
+            animation: slideUp 0.6s ease-out 0.3s backwards;
+        }
+
+        .upgrades-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-align: center;
+            color: var(--accent-primary);
+        }
+
+        .upgrade-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .upgrade-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .upgrade-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .upgrade-list::-webkit-scrollbar-thumb {
+            background: var(--accent-primary);
+            border-radius: 10px;
+        }
+
+        .upgrade-item {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .upgrade-item:hover {
+            border-color: var(--accent-primary);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .upgrade-info {
+            flex: 1;
+        }
+
+        .upgrade-name {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .upgrade-description {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .upgrade-button {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .upgrade-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px var(--accent-glow);
+        }
+
+        .upgrade-button:active {
+            transform: scale(0.95);
+        }
+
+        .upgrade-button:disabled {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 
+                    0 0 40px var(--accent-glow),
+                    0 0 80px var(--accent-glow),
+                    inset 0 0 30px rgba(255, 255, 255, 0.3);
+            }
+            50% {
+                box-shadow: 
+                    0 0 60px var(--accent-glow),
+                    0 0 120px var(--accent-glow),
+                    inset 0 0 40px rgba(255, 255, 255, 0.4);
+            }
+        }
+
+        @keyframes rotate {
+            from {
+                transform: translate(-50%, -50%) rotate(0deg);
+            }
+            to {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
+        }
+
+        @keyframes floatUp {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-100px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar">👤</div>
+                <span id="userName">Игрок</span>
+            </div>
+            <h1 class="title">ЭНЕРГО-КЛИКЕР</h1>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-label">Монеты</div>
+                <div class="stat-value" id="coins">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Энергия</div>
+                <div class="stat-value energy-value" id="energy">100</div>
+            </div>
+        </div>
+
+        <div class="game-area">
+            <button class="click-button" id="clickButton"></button>
+        </div>
+
+        <div class="upgrades">
+            <div class="upgrades-title">⚙️ УЛУЧШЕНИЯ</div>
+            <div class="upgrade-list">
+                <div class="upgrade-item">
+                    <div class="upgrade-info">
+                        <div class="upgrade-name">Усилитель клика</div>
+                        <div class="upgrade-description">+1 монета за клик</div>
+                    </div>
+                    <button class="upgrade-button" onclick="buyUpgrade('clickPower', 10)">
+                        10 💰
+                    </button>
+                </div>
+                <div class="upgrade-item">
+                    <div class="upgrade-info">
+                        <div class="upgrade-name">Генератор энергии</div>
+                        <div class="upgrade-description">+10 энергии/сек</div>
+                    </div>
+                    <button class="upgrade-button" onclick="buyUpgrade('energyRegen', 25)">
+                        25 💰
+                    </button>
+                </div>
+                <div class="upgrade-item">
+                    <div class="upgrade-info">
+                        <div class="upgrade-name">Авто-кликер</div>
+                        <div class="upgrade-description">+1 монета/сек</div>
+                    </div>
+                    <button class="upgrade-button" onclick="buyUpgrade('autoClick', 50)">
+                        50 💰
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.enableClosingConfirmation();
+
+        // Применение темы Telegram
+        if (tg.colorScheme === 'dark') {
+            document.documentElement.style.setProperty('--bg-primary', tg.backgroundColor || '#0a0e27');
+        }
+
+        // Получение данных пользователя
+        const user = tg.initDataUnsafe.user;
+        if (user) {
+            document.getElementById('userName').textContent = user.first_name || 'Игрок';
+            if (user.first_name) {
+                document.getElementById('userAvatar').textContent = user.first_name.charAt(0).toUpperCase();
+            }
+        }
+
+        // Игровая логика
+        let gameState = {
+            coins: 0,
+            energy: 100,
+            maxEnergy: 100,
+            clickPower: 1,
+            energyRegen: 5,
+            autoClickPower: 0,
+            upgrades: {
+                clickPower: 0,
+                energyRegen: 0,
+                autoClick: 0
+            }
+        };
+
+        // Загрузка сохраненного состояния
+        const savedState = localStorage.getItem('gameState');
+        if (savedState) {
+            gameState = {...gameState, ...JSON.parse(savedState)};
+            updateUI();
+        }
+
+        const clickButton = document.getElementById('clickButton');
+        const coinsDisplay = document.getElementById('coins');
+        const energyDisplay = document.getElementById('energy');
+
+        // Обработчик клика
+        clickButton.addEventListener('click', (e) => {
+            if (gameState.energy >= 1) {
+                gameState.coins += gameState.clickPower;
+                gameState.energy -= 1;
+                
+                // Вибрация
+                if (tg.HapticFeedback) {
+                    tg.HapticFeedback.impactOccurred('light');
+                }
+
+                // Анимация +монет
+                const animation = document.createElement('div');
+                animation.className = 'click-animation';
+                animation.textContent = `+${gameState.clickPower}`;
+                animation.style.left = e.clientX + 'px';
+                animation.style.top = e.clientY + 'px';
+                document.body.appendChild(animation);
+                setTimeout(() => animation.remove(), 1000);
+
+                updateUI();
+                saveGame();
+            }
+        });
+
+        // Покупка улучшений
+        function buyUpgrade(type, cost) {
+            if (gameState.coins >= cost) {
+                gameState.coins -= cost;
+                gameState.upgrades[type]++;
+
+                if (type === 'clickPower') {
+                    gameState.clickPower++;
+                } else if (type === 'energyRegen') {
+                    gameState.energyRegen += 10;
+                } else if (type === 'autoClick') {
+                    gameState.autoClickPower++;
+                }
+
+                if (tg.HapticFeedback) {
+                    tg.HapticFeedback.notificationOccurred('success');
+                }
+
+                updateUI();
+                saveGame();
+            } else {
+                if (tg.HapticFeedback) {
+                    tg.HapticFeedback.notificationOccurred('error');
+                }
+            }
+        }
+
+        // Обновление UI
+        function updateUI() {
+            coinsDisplay.textContent = Math.floor(gameState.coins);
+            energyDisplay.textContent = Math.floor(gameState.energy);
+
+            // Обновление кнопок улучшений
+            const upgradeButtons = document.querySelectorAll('.upgrade-button');
+            upgradeButtons.forEach(button => {
+                const cost = parseInt(button.textContent);
+                button.disabled = gameState.coins < cost;
+            });
+        }
+
+        // Сохранение игры
+        function saveGame() {
+            localStorage.setItem('gameState', JSON.stringify(gameState));
+            
+            // Отправка данных в бота (опционально)
+            if (tg.initData) {
+                // Можно отправить данные боту для синхронизации
+                // tg.sendData(JSON.stringify(gameState));
+            }
+        }
+
+        // Регенерация энергии
+        setInterval(() => {
+            if (gameState.energy < gameState.maxEnergy) {
+                gameState.energy = Math.min(gameState.maxEnergy, gameState.energy + gameState.energyRegen / 10);
+                updateUI();
+            }
+        }, 100);
+
+        // Авто-клик
+        setInterval(() => {
+            if (gameState.autoClickPower > 0) {
+                gameState.coins += gameState.autoClickPower;
+                updateUI();
+                saveGame();
+            }
+        }, 1000);
+
+        // Настройка главной кнопки Telegram
+        tg.MainButton.text = "Поделиться результатом";
+        tg.MainButton.color = "#00ff88";
+        tg.MainButton.show();
+        
+        tg.MainButton.onClick(() => {
+            const message = `🎮 Я заработал ${Math.floor(gameState.coins)} монет в Энерго-Кликере! Сможешь больше?`;
+            tg.close();
+            // В реальном боте здесь можно открыть диалог отправки
+        });
+
+        // Инициализация
+        updateUI();
+    </script>
+</body>
+</html>
